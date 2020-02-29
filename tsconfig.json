@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["dom", "es2019"],
+		"outDir": "./lib",
+		"module": "esnext",
+		"moduleResolution": "node",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"removeComments": true,
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"watch": true,
+		"incremental": false,
+		"declaration": true
+	},
+
+	"exclude": ["node_modules"],
+
+	"files": [
+		"./src/index.ts"
+	]
+}

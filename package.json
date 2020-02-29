@@ -1,0 +1,24 @@
+{
+  "name": "fc-premium-core",
+  "version": "0.0.1",
+  "description": "Fc premium core api",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/fc-premium/fc-premium-core.git"
+  },
+  "author": "pytness",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/fc-premium/fc-premium-core/issues"
+  },
+  "homepage": "https://gitlab.com/fc-premium/fc-premium-core#readme",
+  "dependencies": {
+    "@octokit/rest": "^16.43.1",
+    "@types/chrome": "0.0.94",
+    "fc-rest-api-temp": "0.0.9"
+  }
+}
