@@ -47,14 +47,6 @@ export class Module {
 	public onload: Function;
 	public onunload: Function;
 
-	// get onunload() {
-	// 	return () => { }
-	// }
-	//
-	// set onunload(value: Function) {
-	// 	console.log('set onunload: ', value);
-	// }
-
 	private loaded: boolean = false;
 
 	public constructor(data: Module.ParameterObject) {
@@ -202,7 +194,6 @@ export class Module {
 	}
 
 	public unload(): void {
-		debugger;
 		if (this.isLoaded()) {
 			this.onunload();
 			this.setLoadedState(false);
