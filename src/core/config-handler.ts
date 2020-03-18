@@ -63,7 +63,10 @@ export class ConfigHandler {
 	}
 
 	public getMeta(key: string): ConfigHandler.Setting {
-		return this.settings.get(key);
+		const setting = this.settings.get(key);
+		setting.value = this.get(key);
+
+		return setting;
 	}
 
 	public get(key: string): any {
@@ -92,15 +95,6 @@ export class ConfigHandler {
 			console.error('Config already defined')
 			return;
 		}
-
-		const registeredSettings: ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
-
-		// register setting if not defined and set default value
-		if (!registeredSettings.hasOwnProperty(key)) {
-			registeredSettings[key] = setting.default;
-			Core.controller.set(StorageEntries.config, registeredSettings);
-		}
-
 	}
 
 	public remove(key: string): void {
