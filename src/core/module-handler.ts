@@ -2,6 +2,7 @@ import { StorageEntries } from '../definitions'
 import { ConfigHandler } from './config-handler'
 import { Core } from './core'
 import { Module } from '../module'
+import { NO_CACHE_HEADERS } from '../definitions'
 import * as fcpremium from '../index'
 
 
@@ -10,7 +11,7 @@ const Octokit = require("@octokit/rest");
 const octokit = new Octokit();
 
 export namespace ModuleHandler {
-	export interface EvaledWebpackModule {
+	export interface WebpackModule {
 		module: Module;
 		info: Module.Info;
 		config?: ConfigHandler.ConfigObject;
@@ -46,7 +47,7 @@ export class ModuleHandler {
 		return this.modules.get(key);
 	}
 
-	private registerModule(webpackModule: ModuleHandler.EvaledWebpackModule, sourceScript: string): void {
+	private registerModule(webpackModule: ModuleHandler.WebpackModule, sourceScript: string): void {
 		const registeredModules: ModuleHandler.ModuleEntriesRoot = Core.controller.get(StorageEntries.packages);
 
 		const module = webpackModule.module;
@@ -65,11 +66,16 @@ export class ModuleHandler {
 			Core.controller.set(StorageEntries.packages, registeredModules);
 
 
-			const moduleConfig: Object = Core.controller.get(StorageEntries.config);
-			moduleConfig[name] = {};
+			// register settings
+			if (webpackModule.config !== undefined) {
+				const registeredSettings: ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
 
-			Core.controller.set(StorageEntries.config, moduleConfig);
+				Object.entries(webpackModule.config).forEach(([key, options]) =>
+					registeredSettings[`${name}.${key}`] = options.default
+				);
 
+				Core.controller.set(StorageEntries.config, registeredSettings);
+			}
 
 			// Create storage object
 			const moduleStorage: Object = Core.controller.get(StorageEntries.storage);
@@ -96,7 +102,6 @@ export class ModuleHandler {
 
 			const module = this.get(name);
 			console.log('setModuleIsEnabled', module)
-			debugger;
 
 			if (value === true)
 				module.load();
@@ -158,44 +163,37 @@ export class ModuleHandler {
 
 		const url = releases.data[0].assets[0].browser_download_url;
 
-		const sourceCode: string = await fetch(url)
-			.then(response => response.text());
-
-		const webpackModule = this.contextualEval(sourceCode);
-
-		// Check if is a webpack module
-		if (webpackModule.__esModule === true && webpackModule[Symbol.toStringTag] === 'Module' && webpackModule.module != undefined)
-			this.registerModule(webpackModule, sourceCode);
-		else
-			console.log(`Unable to install module from ${url}`)
-
-		// TODO: change this shit
-		if (load)
-			this.evalInstalledModules()
+		return this.installModuleFromURL(url, load);
 	}
 
-	public async installModuleFromURL(url: string) {
+	public async installModuleFromURL(url: string, load: boolean = false) {
 
-		const sourceCode: string = await fetch(url)
+		const sourceCode: string = await fetch(url, { headers: NO_CACHE_HEADERS })
 			.then(response => response.text());
 
 		const webpackModule = this.contextualEval(sourceCode);
 
 		// Check if is a webpack module
-		if (webpackModule.__esModule === true && webpackModule[Symbol.toStringTag] === 'Module' && webpackModule.module != undefined)
+		if (webpackModule.__esModule === true && webpackModule[Symbol.toStringTag] === 'Module' && webpackModule.module !== undefined)
 			this.registerModule(webpackModule, sourceCode);
 		else
 			console.log(`Unable to install module from ${url}`)
+
+		if (load === true) {
+			console.log('Load is enabled', webpackModule)
+			this.evalWebpackModule(webpackModule);
+			webpackModule.module.load()
+		}
 	}
 
 	public uninstall(name: string): void {
+
 		// Remove storage key
 		const moduleStorage: Object = Core.controller.get(StorageEntries.storage);
 		delete moduleStorage[name];
 		Core.controller.set(StorageEntries.storage, moduleStorage);
 
 		// Remove settings
-
 		const moduleKey = `${name}.`;
 		Core.config.keys().forEach(key => {
 			if (key.startsWith(moduleKey))
@@ -203,7 +201,6 @@ export class ModuleHandler {
 		})
 
 		// remove package
-
 		const registeredModules: Object = Core.controller.get(StorageEntries.packages);
 		delete registeredModules[name];
 		Core.controller.set(StorageEntries.packages, registeredModules);
@@ -226,16 +223,21 @@ export class ModuleHandler {
 		return this.modules;
 	}
 
-	private contextualEval(source: string): ModuleHandler.EvaledWebpackModule {
+	private contextualEval(source: string): ModuleHandler.WebpackModule {
 		return (function(fcpremium) {
 			return eval(source);
 		})(fcpremium);
 	}
 
-	private evalModule(source: string) {
+	private evalModuleSource(source: string) {
 
 		const webpackModule = this.contextualEval(source);
-		// const name = webpackModule.mo
+		this.evalWebpackModule(webpackModule);
+	}
+
+	private evalWebpackModule(webpackModule: ModuleHandler.WebpackModule) {
+
+		const name = webpackModule.module.name;
 
 		if (this.modules.has(name) === false)
 			this.modules.set(name, webpackModule.module)
@@ -262,31 +264,9 @@ export class ModuleHandler {
 	private evalInstalledModules() {
 		const moduleEntries = <ModuleHandler.ModuleEntriesRoot>Core.controller.get(StorageEntries.packages);
 
-		Object.keys(moduleEntries).forEach(name => {
-
-			const webpackModule = this.contextualEval(moduleEntries[name].script);
-
-			if (this.modules.has(name) === false)
-				this.modules.set(name, webpackModule.module)
-
-			// register settings
-			if (webpackModule.config !== undefined) {
-				Object.entries(webpackModule.config).forEach(([key, options]) =>
-					Core.config.register(`${name}.${key}`, options)
-				);
-			}
-
-			// register style
-			if (webpackModule.css !== undefined) {
-				const styleElement = document.createElement('style');
-				styleElement.innerHTML = webpackModule.css;
-
-				styleElement.setAttribute('tag', 'fc-premium-module');
-				styleElement.setAttribute('module-owner', name);
-
-				document.head.appendChild(styleElement);
-			}
-		});
+		Object.keys(moduleEntries).forEach(name =>
+			this.evalModuleSource(moduleEntries[name].script)
+		);
 	}
 
 	public loadModule(module: Module) {
