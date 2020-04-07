@@ -64,7 +64,10 @@ export class ConfigHandler {
 
 	public getMeta(key: string): ConfigHandler.Setting {
 		const setting = this.settings.get(key);
-		setting.value = this.get(key);
+
+		if (setting !== undefined)
+			setting.value = this.get(key);
+
 
 		return setting;
 	}
@@ -86,32 +89,43 @@ export class ConfigHandler {
 		this.set(key, defaultValue);
 	}
 
-	public register(key: string, setting): void {
+	public register(settings: ConfigHandler.ConfigObject, prefix: string = ''): void {
 
-		if (!this.settings.has(key)) {
-			this.settings.set(key, setting);
+		Object.entries(settings).forEach(([key, setting]) => {
+			key = `${prefix}.${key}`;
 
-		} else {
-			console.error('Config already defined')
-			return;
-		}
+			if (this.settings.has(key) === false)
+				this.settings.set(key, setting);
+		});
+	}
+
+	public registerInStorage(settings: ConfigHandler.ConfigObject, prefix: string = ''): void {
+
+		const registeredSettings = Core.controller.get(StorageEntries.config);
+
+		Object.entries(settings).forEach(([key, setting]) => {
+			key = `${prefix}.${key}`;
+			registeredSettings[key] = setting.default;
+		});
+
+		Core.controller.set(StorageEntries.config, registeredSettings);
 	}
 
 	public remove(key: string): void {
-		console.log('removing', key)
 		this.settings.delete(key);
 
 		const registeredSettings: ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
 
 		if (registeredSettings.hasOwnProperty(key)) {
-			console.log('removing', registeredSettings)
 			delete registeredSettings[key];
 			Core.controller.set(StorageEntries.config, registeredSettings);
 		}
 	}
 
-	public keys(): string[] {
+	public keys(prefix: string = ''): string[] {
 		const registeredSettings: ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
-		return Object.keys(registeredSettings);
+		return Object.keys(registeredSettings).filter(key =>
+			key.startsWith(prefix)
+		);
 	}
 }

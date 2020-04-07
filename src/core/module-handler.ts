@@ -99,9 +99,7 @@ export class ModuleHandler {
 			registeredModules[name].enabled = value;
 			Core.controller.set(StorageEntries.packages, registeredModules);
 
-
 			const module = this.get(name);
-			console.log('setModuleIsEnabled', module)
 
 			if (value === true)
 				module.load();
@@ -156,14 +154,27 @@ export class ModuleHandler {
 
 	public async installModuleFromGithub(repo: any, load: boolean = false) {
 
-		const releases = await octokit.repos.listReleases({
-			owner: repo.owner.login,
-			repo: repo.name
-		});
+		if (repo.lastRelease === undefined) {
+			const releases = await octokit.repos.listReleases({
+				owner: repo.owner.login,
+				repo: repo.name,
 
-		const url = releases.data[0].assets[0].browser_download_url;
+				per_page: 1
+			});
 
-		return this.installModuleFromURL(url, load);
+			repo.lastRelease = releases.data[0];
+		}
+
+		if (repo.lastRelease !== undefined && repo.lastRelease.assets.length !== 0) {
+			const url = repo.lastRelease.assets[0].browser_download_url;
+
+			if (url !== undefined)
+				return this.installModuleFromURL(url, load);
+
+		}
+
+
+
 	}
 
 	public async installModuleFromURL(url: string, load: boolean = false) {
@@ -243,11 +254,8 @@ export class ModuleHandler {
 			this.modules.set(name, webpackModule.module)
 
 		// register settings
-		if (webpackModule.config !== undefined) {
-			Object.entries(webpackModule.config).forEach(([key, options]) =>
-				Core.config.register(`${name}.${key}`, options)
-			);
-		}
+		if (webpackModule.config !== undefined)
+			Core.config.register(webpackModule.config, name);
 
 		// register style
 		if (webpackModule.css !== undefined) {

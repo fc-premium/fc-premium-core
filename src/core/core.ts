@@ -28,15 +28,22 @@ export class Core {
 		Core.controller.set(StorageEntries.packages, {});
 		Core.controller.set(StorageEntries.config, {});
 		Core.controller.set(StorageEntries.storage, {});
+
+		if (Core.onInstall !== null)
+			Core.onInstall();
 	}
 
 	public static uninstall(): void {
+
 		console.log('Core: Uninstall');
 
 		Core.controller.delete(StorageEntries.root);
 		Core.controller.delete(StorageEntries.packages);
 		Core.controller.delete(StorageEntries.config);
 		Core.controller.delete(StorageEntries.storage);
+
+		if (Core.onUninstall !== null)
+			Core.onUninstall();
 	}
 
 	public static init() {
@@ -45,4 +52,7 @@ export class Core {
 
 		// this.modules.loadInstalledModules();
 	}
+
+	public static onInstall: Function = null;
+	public static onUninstall: Function = null;
 }
