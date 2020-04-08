@@ -1,6 +1,6 @@
-import { Config } from './config'
-import { Debug } from './debug'
-import { LocalStorage } from './storage'
+import { Config as _Config } from './config'
+import { Debug as _Debug } from './debug'
+import { LocalStorage as _LocalStorage } from './storage'
 import { Core } from '../index'
 
 export namespace Module {
@@ -29,7 +29,6 @@ export namespace Module {
 }
 
 export class Module {
-
 	public readonly name: string;
 	public readonly info: Module.Info;
 
@@ -39,9 +38,9 @@ export class Module {
 
 	public readonly hasMobileSupport: boolean;
 
-	public readonly debug: Debug = new Debug(this);
-	public readonly config: Config = new Config(this);
-	public readonly storage: LocalStorage = new LocalStorage(this);
+	public readonly debug: Module.Debug = new Module.Debug(this);
+	public readonly config: Module.Config = new Module.Config(this);
+	public readonly storage: Module.LocalStorage = new Module.LocalStorage(this);
 	// public readonly styles: CSSHandler = new CSSHandler(this);
 
 	public onload: Function;
@@ -199,4 +198,10 @@ export class Module {
 			this.setLoadedState(false);
 		}
 	}
+}
+
+export namespace Module {
+	export import Config = _Config;
+	export import Debug = _Debug;
+	export import LocalStorage = _LocalStorage;
 }

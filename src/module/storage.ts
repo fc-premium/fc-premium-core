@@ -1,5 +1,3 @@
-import { StorageEntries } from '../definitions'
-import { Module } from './module'
 import { Core } from '../core'
 
 /**
@@ -7,10 +5,12 @@ import { Core } from '../core'
  * @param module Module reference
  */
 
-export class LocalStorage {
-	private readonly module: Module;
+import StorageEntries = Core.Definitions.StorageEntries;
 
-	public constructor(moduleReference: Module) {
+export class LocalStorage {
+	private readonly module: Core.Module;
+
+	public constructor(moduleReference: Core.Module) {
 		this.module = moduleReference;
 	}
 
@@ -31,3 +31,6 @@ export class LocalStorage {
 		Core.controller.set(StorageEntries.storage, globalObject);
 	}
 }
+
+// Exporting as a namespace so  it can be imported inside another namespace
+export namespace LocalStorage { };

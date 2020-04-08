@@ -1,21 +1,17 @@
-import { StorageEntries } from '../definitions'
-import { ModuleHandler } from './module-handler'
-import { ConfigHandler } from './config-handler'
-import { Controller } from './controller'
-
+import { Controller as _Controller } from './controller'
+import { ModuleHandler as _ModuleHandler } from './module-handler'
+import { ConfigHandler as _ConfigHandler } from './config-handler'
 import { Module as _Module } from '../module'
+import * as _Definitions from '../definitions'
 
-export namespace Core {
-	// export { Module } from '../module'
-	export type Module = _Module;
-}
+import StorageEntries = _Definitions.StorageEntries;
 
 export class Core {
 
-	public static controller: Controller = new Controller();
+	public static controller: Core.Controller = new _Controller();
 
-	public static modules: ModuleHandler = new ModuleHandler();
-	public static config: ConfigHandler = new ConfigHandler();
+	public static modules: Core.ModuleHandler = new _ModuleHandler();
+	public static config: Core.ConfigHandler = new _ConfigHandler();
 
 	public static isInstalled(): boolean {
 		return Core.controller.list().includes(StorageEntries.root)
@@ -49,10 +45,17 @@ export class Core {
 	public static init() {
 		if (!this.isInstalled())
 			this.install();
-
-		// this.modules.loadInstalledModules();
 	}
 
 	public static onInstall: Function = null;
 	public static onUninstall: Function = null;
+}
+
+
+export namespace Core {
+	export import Definitions = _Definitions;
+	export import Controller = _Controller;
+	export import ModuleHandler = _ModuleHandler;
+	export import ConfigHandler = _ConfigHandler;
+	export import Module = _Module;
 }
