@@ -79,3 +79,6 @@ export class Debug {
 		alert(arg);
 	}
 }
+
+// Exporting as a namespace so  it can be imported inside another namespace
+export namespace Debug { };
