@@ -1,10 +1,10 @@
-import { StorageEntries } from '../definitions'
-import { ConfigHandler } from './config-handler'
 import { Core } from './core'
-import { Module } from '../module'
-import { NO_CACHE_HEADERS } from '../definitions'
-import * as fcpremium from '../index'
+// import * as fcpremium from '../index'
 
+import { StorageEntries, NO_CACHE_HEADERS } from '../definitions'
+
+// import StorageEntries = Core.Definitions.StorageEntries;
+// import NO_CACHE_HEADERS = Core.Definitions.NO_CACHE_HEADERS;
 
 const Octokit = require("@octokit/rest");
 
@@ -12,9 +12,9 @@ const octokit = new Octokit();
 
 export namespace ModuleHandler {
 	export interface WebpackModule {
-		module: Module;
-		info: Module.Info;
-		config?: ConfigHandler.ConfigObject;
+		module: Core.Module;
+		info: Core.Module.Info;
+		config?: Core.ConfigHandler.ConfigObject;
 		css?: string;
 
 		__esModule: boolean;
@@ -24,7 +24,7 @@ export namespace ModuleHandler {
 
 	export interface ModuleEntry {
 		name: string;
-		info: Module.Info;
+		info: Core.Module.Info;
 		script: string;
 		enabled: boolean;
 	}
@@ -37,13 +37,13 @@ export namespace ModuleHandler {
 export class ModuleHandler {
 
 	// static readonly MODULE: Module = MODULE;
-	private modules: Map<string, Module> = new Map();
+	private modules: Map<string, Core.Module> = new Map();
 
 	public has(key: string): boolean {
 		return this.modules.has(key);
 	}
 
-	public get(key: string): Module {
+	public get(key: string): Core.Module {
 		return this.modules.get(key);
 	}
 
@@ -68,7 +68,7 @@ export class ModuleHandler {
 
 			// register settings
 			if (webpackModule.config !== undefined) {
-				const registeredSettings: ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
+				const registeredSettings: Core.ConfigHandler.SettingEntriesRoot = Core.controller.get(StorageEntries.config);
 
 				Object.entries(webpackModule.config).forEach(([key, options]) =>
 					registeredSettings[`${name}.${key}`] = options.default
@@ -113,7 +113,7 @@ export class ModuleHandler {
 	private sortModulesByRequirements(): void {
 
 		// Check for colliding requirements
-		this.modules.forEach((module: Module) => {
+		this.modules.forEach((module: Core.Module) => {
 
 			const moduleName = module.name;
 
@@ -132,7 +132,7 @@ export class ModuleHandler {
 			});
 		});
 
-		let moduleArray: [string, Module][] = Array.from(this.modules.entries());
+		let moduleArray: [string, Core.Module][] = Array.from(this.modules.entries());
 
 		moduleArray.sort(([_a, MODULE_A], [_b, MODULE_B]) => {
 			if (MODULE_A.requiredModules.includes(_b))
@@ -144,12 +144,14 @@ export class ModuleHandler {
 			return 0;
 		});
 
+
 		// Clear and re-set modules
 		this.modules.clear();
 
 		moduleArray.forEach(([key, value]) => {
 			this.modules.set(key, value);
 		});
+		console.log(moduleArray, this.modules);
 	}
 
 	public async installModuleFromGithub(repo: any, load: boolean = false) {
@@ -172,9 +174,6 @@ export class ModuleHandler {
 				return this.installModuleFromURL(url, load);
 
 		}
-
-
-
 	}
 
 	public async installModuleFromURL(url: string, load: boolean = false) {
@@ -229,15 +228,22 @@ export class ModuleHandler {
 	}
 
 	// Return the installed modules
-	public getInstalledModules(): Map<string, Module> {
+	public getInstalledModules(): Map<string, Core.Module> {
 		// TODO: find something more secure
 		return this.modules;
 	}
 
+	// Expects commonjs2
 	private contextualEval(source: string): ModuleHandler.WebpackModule {
 		return (function(fcpremium) {
-			return eval(source);
-		})(fcpremium);
+			const module = {
+				exports: undefined
+			};
+
+			eval(source);
+
+			return module.exports;
+		})({ Core });
 	}
 
 	private evalModuleSource(source: string) {
@@ -277,7 +283,8 @@ export class ModuleHandler {
 		);
 	}
 
-	public loadModule(module: Module) {
+	public loadModule(module: Core.Module) {
+
 		if (module.load()) {
 			console.log(
 				`Loaded [${module.name}]:` +
