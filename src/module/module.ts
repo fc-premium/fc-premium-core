@@ -1,7 +1,7 @@
 import { Config as _Config } from './config'
 import { Debug as _Debug } from './debug'
 import { LocalStorage as _LocalStorage } from './storage'
-import { Core } from '../index'
+import { Core } from '../core'
 
 export namespace Module {
 	export type URLMatchParameter = string | RegExp;
@@ -18,6 +18,7 @@ export namespace Module {
 		author: string;
 		version: string;
 		matches: URLMatchParameter[];
+		isLibrary?: boolean;
 		requiredModules?: string[];
 		preload?: string[];
 
@@ -159,6 +160,9 @@ export class Module {
 	}
 
 	public async preloadScripts(): Promise<unknown[]> {
+		if (this.preload.length === 0)
+			return;
+
 		const preloadMap = this.preload.map(src => {
 			return new Promise(function(resolve) {
 				let script = document.createElement('script');
@@ -177,6 +181,8 @@ export class Module {
 	}
 
 	public load(loadConfig: boolean = true): boolean {
+
+		console.log('trying to load', this.name)
 
 		if (this.isLoaded() === true || this.checkRequiredModules() === false)
 			return false

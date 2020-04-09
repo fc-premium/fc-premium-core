@@ -1,4 +1,5 @@
 import { Controller as _Controller } from './controller'
+import { LibraryHandler as _LibraryHandler } from './library-handler'
 import { ModuleHandler as _ModuleHandler } from './module-handler'
 import { ConfigHandler as _ConfigHandler } from './config-handler'
 import { Module as _Module } from '../module'
@@ -9,7 +10,7 @@ import StorageEntries = _Definitions.StorageEntries;
 export class Core {
 
 	public static controller: Core.Controller = new _Controller();
-
+	public static libraries: Core.LibraryHandler = new _LibraryHandler();
 	public static modules: Core.ModuleHandler = new _ModuleHandler();
 	public static config: Core.ConfigHandler = new _ConfigHandler();
 
@@ -55,6 +56,7 @@ export class Core {
 export namespace Core {
 	export import Definitions = _Definitions;
 	export import Controller = _Controller;
+	export import LibraryHandler = _LibraryHandler;
 	export import ModuleHandler = _ModuleHandler;
 	export import ConfigHandler = _ConfigHandler;
 	export import Module = _Module;
