@@ -1,11 +1,5 @@
 import { Core } from '../core'
-
-/**
- * Interface between a module and the tampermonkey storage
- * @param module Module reference
- */
-
-import StorageEntries = Core.Definitions.StorageEntries;
+import { StorageEntries } from '../definitions'
 
 export class LocalStorage {
 	private readonly module: Core.Module;
