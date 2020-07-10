@@ -1,4 +1,6 @@
 import { Core } from './core'
+import { FC } from "fc-rest-api-temp";
+
 // import * as fcpremium from '../index'
 
 import { StorageEntries, NO_CACHE_HEADERS } from '../definitions'
@@ -110,7 +112,7 @@ export class ModuleHandler {
 	}
 
 	// Sort modules based on requirements
-	private sortModulesByRequirements(): void {
+	private getModulesSortedByRequirements(): Core.Module[][] {
 
 		// Check for colliding requirements
 		this.modules.forEach((module: Core.Module) => {
@@ -132,26 +134,59 @@ export class ModuleHandler {
 			});
 		});
 
-		let moduleArray: [string, Core.Module][] = Array.from(this.modules.entries());
+		let moduleArray: Core.Module[] = Array.from(this.modules.values());
 
-		moduleArray.sort(([_a, MODULE_A], [_b, MODULE_B]) => {
-			if (MODULE_A.requiredModules.includes(_b))
+		moduleArray.sort((module_a, module_b) => {
+
+			if (module_a.requiredModules.includes(module_b.name))
 				return 1;
 
-			if (MODULE_B.requiredModules.includes(_a))
+			if (module_b.requiredModules.includes(module_a.name))
 				return -1;
 
 			return 0;
 		});
 
+		let moduleMatrix: Core.Module[][] = new Array(moduleArray.length).fill(undefined)
+			.map(_ => []);
 
-		// Clear and re-set modules
-		this.modules.clear();
+		let lastItemIndex = 0;
 
-		moduleArray.forEach(([key, value]) => {
-			this.modules.set(key, value);
+		moduleArray.forEach((module: Core.Module) => {
+			let i = lastItemIndex;
+
+			for (; i >= 0; i--) {
+
+				const reqInRow = module.requiredModules.some(r =>
+					moduleMatrix[i].find(m_module =>
+						m_module.name === r
+					)
+				);
+
+				if (reqInRow === true) {
+					lastItemIndex += 1;
+					break;
+				}
+
+			}
+
+			moduleMatrix[i + 1].push(module)
 		});
-		console.log(moduleArray, this.modules);
+
+		moduleMatrix.length = lastItemIndex;
+
+		return moduleMatrix
+
+		console.log('Module Matrix:', moduleMatrix)
+
+		// // Clear and re-set modules
+		// this.modules.clear();
+		//
+		// moduleArray.forEach((module) =>
+		// 	this.modules.set(module.name, module)
+		// );
+
+		// console.log(moduleArray, this.modules);
 	}
 
 	public async installModuleFromGithub(repo: any, load: boolean = false) {
@@ -243,7 +278,7 @@ export class ModuleHandler {
 			eval(source);
 
 			return module.exports;
-		})({ Core });
+		})({ Core, FC });
 	}
 
 	private evalModuleSource(source: string) {
@@ -297,13 +332,16 @@ export class ModuleHandler {
 		}
 	}
 
-	public loadInstalledModules(): void {
+	public async loadInstalledModules(): void {
 
 		this.evalInstalledModules();
 
-		this.sortModulesByRequirements();
+		const moduleMatrix = this.getModulesSortedByRequirements();
 
-		this.modules.forEach(this.loadModule);
+		return moduleMatrix.reduce(async (previousPromise, row) => {
+			await previousPromise;
+			return Promise.all(row.map(this.loadModule));
+		}, Promise.resolve());
 	}
 
 	public unloadInstalledModules(): void {
