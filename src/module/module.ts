@@ -141,15 +141,16 @@ export class Module {
 	public checkRequiredModules(): boolean {
 		return this.requiredModules.every(requiredModuleName => {
 
-			let requiredModule: Module = Core.modules.get(requiredModuleName);
+			const requiredModule = Core.modules.get(requiredModuleName);
 
-			if (!requiredModule.isLoaded())
-				this.debug.error(`Required module "${requiredModuleName}" is not loaded`);
+			if (requiredModule === undefined || !requiredModule.isLoaded()) {
+				this.debug.error(`Required module "${requiredModuleName}" is not loaded/installed`);
+				return false;
+			}
 
-			return requiredModule.isLoaded();
+			return true;
 		});
 	}
-
 	public canExecuteInCurrentLocation(): boolean {
 
 		const currentPath = location.pathname + location.search;
