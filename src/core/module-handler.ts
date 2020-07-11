@@ -1,12 +1,7 @@
 import { Core } from './core'
 import { FC } from "fc-rest-api-temp";
 
-// import * as fcpremium from '../index'
-
 import { StorageEntries, NO_CACHE_HEADERS } from '../definitions'
-
-// import StorageEntries = Core.Definitions.StorageEntries;
-// import NO_CACHE_HEADERS = Core.Definitions.NO_CACHE_HEADERS;
 
 const Octokit = require("@octokit/rest");
 
@@ -27,6 +22,7 @@ export namespace ModuleHandler {
 	export interface ModuleEntry {
 		name: string;
 		info: Core.Module.Info;
+		requiredModules: string[];
 		script: string;
 		enabled: boolean;
 	}
@@ -61,6 +57,7 @@ export class ModuleHandler {
 			registeredModules[name] = <ModuleHandler.ModuleEntry>{
 				name: name,
 				info: module.info,
+				requiredModules: module.requiredModules,
 				script: sourceScript,
 				enabled: true
 			}
@@ -112,53 +109,57 @@ export class ModuleHandler {
 	}
 
 	// Sort modules based on requirements
-	private getModulesSortedByRequirements(): Core.Module[][] {
+	private getModuleEntriesSortedByRequirements(): ModuleHandler.ModuleEntry[][] {
 
-		// Check for colliding requirements
-		this.modules.forEach((module: Core.Module) => {
+		const moduleEntries = Core.controller.get(StorageEntries.packages);
 
-			const moduleName = module.name;
+		let moduleEntriesArray: ModuleHandler.ModuleEntry[] = Object.values(moduleEntries);
 
-			if (module.requiredModules === undefined)
-				return;
+		// Filter out modules with circular requirements
+		moduleEntriesArray = moduleEntriesArray.filter(entry => {
 
-			module.requiredModules.every((requiredModuleName: string) => {
-				if (!this.modules.has(requiredModuleName))
-					throw `Module '${moduleName}' requires '${requiredModuleName}'`;
+			const moduleName = entry.name;
 
-				const requiredModule = this.modules.get(requiredModuleName);
+			if (entry.requiredModules === undefined)
+				return true;
+
+			return entry.requiredModules.every((requiredModuleName: string) => {
+				const requiredModule = moduleEntries[requiredModuleName];
+
+				if (requiredModule === undefined)
+					throw `Module '${moduleName}' requires non installed module '${requiredModuleName}'`;
 
 				if (requiredModule.requiredModules.includes(moduleName))
 					throw `Modules '${moduleName}' and '${requiredModuleName}' must not require each other`;
 
+				return true;
 			});
+
 		});
 
-		let moduleArray: Core.Module[] = Array.from(this.modules.values());
+		moduleEntriesArray.sort((entry_a, entry_b) => {
 
-		moduleArray.sort((module_a, module_b) => {
-
-			if (module_a.requiredModules.includes(module_b.name))
+			if (entry_a.requiredModules.includes(entry_b.name))
 				return 1;
 
-			if (module_b.requiredModules.includes(module_a.name))
+			if (entry_b.requiredModules.includes(entry_a.name))
 				return -1;
 
 			return 0;
 		});
 
-		let moduleMatrix: Core.Module[][] = new Array(moduleArray.length).fill(undefined)
+		let entriesMatrix: ModuleHandler.ModuleEntry[][] = new Array(moduleEntriesArray.length).fill(undefined)
 			.map(_ => []);
 
 		let lastItemIndex = 0;
 
-		moduleArray.forEach((module: Core.Module) => {
+		moduleEntriesArray.forEach((module: ModuleHandler.ModuleEntry) => {
 			let i = lastItemIndex;
 
 			for (; i >= 0; i--) {
 
 				const reqInRow = module.requiredModules.some(r =>
-					moduleMatrix[i].find(m_module =>
+					entriesMatrix[i].find(m_module =>
 						m_module.name === r
 					)
 				);
@@ -170,23 +171,11 @@ export class ModuleHandler {
 
 			}
 
-			moduleMatrix[i + 1].push(module)
+			entriesMatrix[i + 1].push(module)
 		});
 
-		moduleMatrix.length = lastItemIndex;
-
-		return moduleMatrix
-
-		console.log('Module Matrix:', moduleMatrix)
-
-		// // Clear and re-set modules
-		// this.modules.clear();
-		//
-		// moduleArray.forEach((module) =>
-		// 	this.modules.set(module.name, module)
-		// );
-
-		// console.log(moduleArray, this.modules);
+		entriesMatrix.length = lastItemIndex;
+		return entriesMatrix
 	}
 
 	public async installModuleFromGithub(repo: any, load: boolean = false) {
@@ -225,7 +214,6 @@ export class ModuleHandler {
 			console.log(`Unable to install module from ${url}`)
 
 		if (load === true) {
-			console.log('Load is enabled', webpackModule)
 			this.evalWebpackModule(webpackModule);
 			webpackModule.module.load()
 		}
@@ -251,7 +239,10 @@ export class ModuleHandler {
 		Core.controller.set(StorageEntries.packages, registeredModules);
 
 		if (this.modules.has(name)) {
-			this.modules.get(name).unload();
+			try {
+				this.modules.get(name).unload();
+			} catch (e) { }
+
 			this.modules.delete(name);
 		}
 
@@ -281,13 +272,12 @@ export class ModuleHandler {
 		})({ Core, FC });
 	}
 
-	private evalModuleSource(source: string) {
-
+	private evalModuleSource(source: string): Core.Module {
 		const webpackModule = this.contextualEval(source);
-		this.evalWebpackModule(webpackModule);
+		return this.evalWebpackModule(webpackModule);
 	}
 
-	private evalWebpackModule(webpackModule: ModuleHandler.WebpackModule) {
+	private evalWebpackModule(webpackModule: ModuleHandler.WebpackModule): Core.Module {
 
 		const name = webpackModule.module.name;
 
@@ -308,14 +298,8 @@ export class ModuleHandler {
 
 			document.head.appendChild(styleElement);
 		}
-	}
 
-	private evalInstalledModules() {
-		const moduleEntries = <ModuleHandler.ModuleEntriesRoot>Core.controller.get(StorageEntries.packages);
-
-		Object.keys(moduleEntries).forEach(name =>
-			this.evalModuleSource(moduleEntries[name].script)
-		);
+		return webpackModule.module;
 	}
 
 	public loadModule(module: Core.Module) {
@@ -332,15 +316,16 @@ export class ModuleHandler {
 		}
 	}
 
-	public async loadInstalledModules(): void {
+	public async loadInstalledModules(): Promise<void> {
 
-		this.evalInstalledModules();
+		const moduleMatrix = this.getModuleEntriesSortedByRequirements();
 
-		const moduleMatrix = this.getModulesSortedByRequirements();
-
-		return moduleMatrix.reduce(async (previousPromise, row) => {
+		await moduleMatrix.reduce(async (previousPromise, row): Promise<any> => {
 			await previousPromise;
-			return Promise.all(row.map(this.loadModule));
+			return Promise.all(row.map(entry => {
+				const module = this.evalModuleSource(entry.script)
+				this.loadModule(module);
+			}));
 		}, Promise.resolve());
 	}
 
