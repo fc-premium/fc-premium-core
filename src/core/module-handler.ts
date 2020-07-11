@@ -168,14 +168,14 @@ export class ModuleHandler {
 					lastItemIndex += 1;
 					break;
 				}
-
 			}
 
 			entriesMatrix[i + 1].push(module)
 		});
 
-		entriesMatrix.length = lastItemIndex;
-		return entriesMatrix
+		return entriesMatrix.filter(row =>
+			row.length > 0
+		)
 	}
 
 	public async installModuleFromGithub(repo: any, load: boolean = false) {
