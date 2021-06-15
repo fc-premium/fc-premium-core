@@ -5,6 +5,8 @@ import * as _ConfigHandler from './config-handler'
 import * as _Module from './module'
 import * as _Definitions from './definitions'
 
+import { CoreInstalledEvent, CoreUninstalledEvent } from './events'
+
 import StorageEntries = _Definitions.StorageEntries;
 
 export namespace Core {
@@ -16,6 +18,12 @@ export namespace Core {
 	export import ConfigHandler = _ConfigHandler.ConfigHandler;
 	export import ModuleHandler = _ModuleHandler.ModuleHandler;
 	export import Module = _Module.Module;
+
+	const __event_target = new EventTarget();
+
+	export const addEventListener: EventTarget['addEventListener'] = __event_target.addEventListener.bind(__event_target);
+	export const removeEventListener: EventTarget['removeEventListener'] = __event_target.removeEventListener.bind(__event_target);
+	export const dispatchEvent: EventTarget['dispatchEvent'] = __event_target.dispatchEvent.bind(__event_target);
 
 
 	// // public static libraries: Core.LibraryHandler = new _LibraryHandler();
@@ -34,8 +42,7 @@ export namespace Core {
 		Core.Controller.set(StorageEntries.config, {});
 		Core.Controller.set(StorageEntries.storage, {});
 
-		if (Core.onInstall !== null)
-			Core.onInstall();
+		Core.dispatchEvent(new CoreInstalledEvent);
 	}
 
 	export function uninstall(): void {
@@ -45,8 +52,7 @@ export namespace Core {
 			Core.Controller.delete(key)
 		);
 
-		if (Core.onUninstall !== null)
-			Core.onUninstall();
+		Core.dispatchEvent(new CoreUninstalledEvent);
 	}
 
 	export function init() {
@@ -55,7 +61,4 @@ export namespace Core {
 		// if (!this.isInstalled())
 		// 	this.install();
 	}
-
-	export let onInstall: Function = null;
-	export let onUninstall: Function = null;
 }
