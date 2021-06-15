@@ -3,6 +3,8 @@ import { Debug as _Debug } from './debug'
 import { LocalStorage as _LocalStorage } from './storage'
 import { Core } from '../core'
 
+import { Events } from '../events'
+
 export namespace Module {
 	export type URLMatchParameter = string | RegExp;
 
@@ -23,17 +25,6 @@ export namespace Module {
 		preload?: string[];
 
 		hasMobileSupport?: boolean;
-	}
-}
-
-export class LoadEvent extends CustomEvent<void> {
-	constructor() {
-		super('load');
-	}
-}
-export class UnloadEvent extends CustomEvent<void> {
-	constructor() {
-		super('unload');
 	}
 }
 
@@ -191,7 +182,7 @@ export class Module extends EventTarget {
 
 		this.preloadScripts().then(() => {
 			this.setLoadedState(true);
-			this.dispatchEvent(new LoadEvent())
+			this.dispatchEvent(new Events.LoadEvent)
 
 		});
 
@@ -201,7 +192,7 @@ export class Module extends EventTarget {
 	public unload(): void {
 		if (this.isLoaded()) {
 			this.setLoadedState(false);
-			this.dispatchEvent(new UnloadEvent())
+			this.dispatchEvent(new Events.UnloadEvent)
 		}
 	}
 

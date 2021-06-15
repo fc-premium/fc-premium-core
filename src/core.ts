@@ -5,7 +5,7 @@ import * as _ConfigHandler from './config-handler'
 import * as _Module from './module'
 import * as _Definitions from './definitions'
 
-import { CoreInstalledEvent, CoreUninstalledEvent } from './events'
+import { Events } from './events'
 
 import StorageEntries = _Definitions.StorageEntries;
 
@@ -42,7 +42,7 @@ export namespace Core {
 		Core.Controller.set(StorageEntries.config, {});
 		Core.Controller.set(StorageEntries.storage, {});
 
-		Core.dispatchEvent(new CoreInstalledEvent);
+		Core.dispatchEvent(new Events.InstallEvent);
 	}
 
 	export function uninstall(): void {
@@ -52,7 +52,7 @@ export namespace Core {
 			Core.Controller.delete(key)
 		);
 
-		Core.dispatchEvent(new CoreUninstalledEvent);
+		Core.dispatchEvent(new Events.UninstallEvent);
 	}
 
 	export function init() {
