@@ -102,7 +102,7 @@ export class ModuleHandler {
 	}
 
 	private static contextualEval(source: string): ModuleHandler.WebpackModule {
-		return (function(fcpremium) {
+		return (function (fcpremium) {
 			const module = {
 				exports: undefined
 			};
