@@ -9,41 +9,46 @@ export class Config {
 		this.parentModule = module;
 	}
 
+	private getPrefixedKey(key: string): string {
+		return `${this.parentModule.name}.${key}`;
+	}
+
 	public has(key: string): boolean {
-		key = `${this.parentModule.name}.${key}`;
-		return Core.config.has(key)
+		key = this.getPrefixedKey(key);
+		return Core.ConfigHandler.has(key)
 	}
 
 	public getMeta(key: string): any {
-		key = `${this.parentModule.name}.${key}`;
+		key = this.getPrefixedKey(key);
 
-		if (!Core.config.has(key))
+		if (!Core.ConfigHandler.has(key))
 			throw new Error(`'${key}' does not exist`)
 
-		return Core.config.getMeta(key);
+		return Core.ConfigHandler.getMeta(key);
 	}
 
 	public get(key: string): any {
-		key = `${this.parentModule.name}.${key}`;
+		key = this.getPrefixedKey(key);
 
-		if (!Core.config.has(key))
+		if (!Core.ConfigHandler.has(key))
 			throw new Error(`'${key}' does not exist`)
 
-		return Core.config.get(key);
+		return Core.ConfigHandler.get(key);
 	}
 
 	public set(key: string, value: any): void {
-		key = `${this.parentModule.name}.${key}`;
+		key = this.getPrefixedKey(key);
 
-		if (!Core.config.has(key))
+		if (!Core.ConfigHandler.has(key))
 			throw new Error(`'${key}' does not exist`)
 
-		Core.config.set(key, value);
+		Core.ConfigHandler.set(key, value);
 	}
 
 	public keys(fullpath: boolean = false): string[] {
 		const prefix = `${this.parentModule.name}.`;
-		let keys: string[] = Core.config.keys().filter((key) =>
+
+		let keys: string[] = Core.ConfigHandler.keys().filter((key) =>
 			key.startsWith(prefix)
 		);
 
@@ -54,14 +59,13 @@ export class Config {
 	}
 
 	public reset(key: string, autosave: boolean = true) {
-		key = `${this.parentModule.name}.${key}`;
-		Core.config.reset(key);
+		key = this.getPrefixedKey(key);
+		Core.ConfigHandler.reset(key);
 	}
 
 	public resetAll() {
-
 		this.keys(true).forEach(key =>
-			Core.config.reset(key)
+			Core.ConfigHandler.reset(key)
 		);
 	}
 }

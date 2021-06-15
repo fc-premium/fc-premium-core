@@ -78,11 +78,11 @@ export class Module {
 	}
 
 	get enabled(): boolean {
-		return Core.modules.getModuleIsEnabled(this.name);
+		return Core.ModuleHandler.getModuleIsEnabled(this.name);
 	}
 
 	set enabled(value: boolean) {
-		Core.modules.setModuleIsEnabled(this.name, value);
+		Core.ModuleHandler.setModuleIsEnabled(this.name, value);
 	}
 
 	public isLoaded(): boolean {
@@ -141,7 +141,7 @@ export class Module {
 	public checkRequiredModules(): boolean {
 		return this.requiredModules.every(requiredModuleName => {
 
-			const requiredModule = Core.modules.get(requiredModuleName);
+			const requiredModule = Core.ModuleHandler.get(requiredModuleName);
 
 			if (requiredModule === undefined || !requiredModule.isLoaded()) {
 				this.debug.error(`Required module "${requiredModuleName}" is not loaded/installed`);

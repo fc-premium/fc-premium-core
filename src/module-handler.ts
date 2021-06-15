@@ -2,9 +2,13 @@ import { Octokit } from "@octokit/rest";
 
 import { Core } from './core'
 import { FC } from "fc-rest-api-temp";
-import { StorageEntries, NO_CACHE_HEADERS } from '../definitions'
+import { StorageEntries, NO_CACHE_HEADERS } from './definitions'
 
-const octokit = new Octokit();
+const octokit = new Octokit({
+	auth: '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'
+});
+
+console.log('octokit', octokit)
 
 export namespace ModuleHandler {
 	export interface WebpackModule {
@@ -38,50 +42,49 @@ export namespace ModuleHandler {
 
 }
 
+const __modules: Map<string, Core.Module> = new Map();
+
 export class ModuleHandler {
 
-	// static readonly MODULE: Module = MODULE;
-	private modules: Map<string, Core.Module> = new Map();
-
-	public has(key: string): boolean {
-		return this.modules.has(key);
+	public static has(key: string): boolean {
+		return __modules.has(key);
 	}
 
-	public get(key: string): Core.Module {
-		return this.modules.get(key);
+	public static get(key: string): Core.Module {
+		return __modules.get(key);
 	}
 
-	private getModuleEntries(): ModuleHandler.ModuleEntriesRoot {
-		return Core.controller.get(StorageEntries.packages);
+	private static getModuleEntries(): ModuleHandler.ModuleEntriesRoot {
+		return Core.Controller.get(StorageEntries.packages);
 	}
 
-	private setModuleEntries(entries: ModuleHandler.ModuleEntriesRoot): void {
-		Core.controller.set(StorageEntries.packages, entries);
+	private static setModuleEntries(entries: ModuleHandler.ModuleEntriesRoot): void {
+		Core.Controller.set(StorageEntries.packages, entries);
 	}
 
-	private getStorageEntries(): ModuleHandler.StorageEntriesRoot {
-		return Core.controller.get(StorageEntries.storage);
+	private static getStorageEntries(): ModuleHandler.StorageEntriesRoot {
+		return Core.Controller.get(StorageEntries.storage);
 	}
 
-	private setStorageEntries(entries: ModuleHandler.StorageEntriesRoot): void {
-		Core.controller.set(StorageEntries.storage, entries);
+	private static setStorageEntries(entries: ModuleHandler.StorageEntriesRoot): void {
+		Core.Controller.set(StorageEntries.storage, entries);
 	}
 
-	private getConfigEntries(): ModuleHandler.ConfigEntriesRoot {
-		return Core.controller.get(StorageEntries.config);
+	private static getConfigEntries(): ModuleHandler.ConfigEntriesRoot {
+		return Core.Controller.get(StorageEntries.config);
 	}
 
-	private setConfigEntries(entries: ModuleHandler.ConfigEntriesRoot): void {
-		Core.controller.set(StorageEntries.config, entries);
+	private static setConfigEntries(entries: ModuleHandler.ConfigEntriesRoot): void {
+		Core.Controller.set(StorageEntries.config, entries);
 	}
 
-	public getModuleIsEnabled(name: string): boolean {
+	public static getModuleIsEnabled(name: string): boolean {
 		const registeredModules = this.getModuleEntries();
 
 		return registeredModules[name].enabled;
 	}
 
-	public setModuleIsEnabled(name: string, value: boolean): void {
+	public static setModuleIsEnabled(name: string, value: boolean): void {
 		const registeredModules = this.getModuleEntries();
 
 		if (registeredModules[name] !== undefined) {
@@ -98,7 +101,7 @@ export class ModuleHandler {
 		}
 	}
 
-	private contextualEval(source: string): ModuleHandler.WebpackModule {
+	private static contextualEval(source: string): ModuleHandler.WebpackModule {
 		return (function(fcpremium) {
 			const module = {
 				exports: undefined
@@ -111,16 +114,16 @@ export class ModuleHandler {
 	}
 
 	// TODO: change name
-	private evalWebpackModule(webpackModule: ModuleHandler.WebpackModule): Core.Module {
+	private static evalWebpackModule(webpackModule: ModuleHandler.WebpackModule): Core.Module {
 
 		const name = webpackModule.module.name;
 
-		if (this.modules.has(name) === false)
-			this.modules.set(name, webpackModule.module)
+		if (__modules.has(name) === false)
+			__modules.set(name, webpackModule.module)
 
 		// register settings
 		if (webpackModule.config !== undefined)
-			Core.config.register(webpackModule.config, name);
+			Core.ConfigHandler.register(webpackModule.config, name);
 
 		// register style
 		if (webpackModule.css !== undefined) {
@@ -136,12 +139,12 @@ export class ModuleHandler {
 		return webpackModule.module;
 	}
 
-	private evalModuleSource(source: string): Core.Module {
+	private static evalModuleSource(source: string): Core.Module {
 		const webpackModule = this.contextualEval(source);
 		return this.evalWebpackModule(webpackModule);
 	}
 
-	private registerModule(webpackModule: ModuleHandler.WebpackModule, sourceScript: string): void {
+	private static registerModule(webpackModule: ModuleHandler.WebpackModule, sourceScript: string): void {
 		const registeredModules = this.getModuleEntries();
 
 		const module = webpackModule.module;
@@ -179,10 +182,15 @@ export class ModuleHandler {
 		}
 	}
 
-	public async installModuleFromURL(url: string, load: boolean = false) {
+	public static async installModuleFromURL(url: string, load: boolean = false) {
 
-		const sourceCode: string = await fetch(url, { headers: NO_CACHE_HEADERS })
+		const sourceCode: string = await fetch(url, {
+			method: 'GET',
+			headers: NO_CACHE_HEADERS
+		})
 			.then(response => response.text());
+
+		debugger
 
 		const webpackModule = this.contextualEval(sourceCode);
 
@@ -198,7 +206,7 @@ export class ModuleHandler {
 		}
 	}
 
-	public async installModuleFromGithub(repo: any, load: boolean = false) {
+	public static async installModuleFromGithub(repo: any, load: boolean = false) {
 
 		if (repo.lastRelease === undefined) {
 			const releases = await octokit.repos.listReleases({
@@ -219,19 +227,19 @@ export class ModuleHandler {
 		}
 	}
 
-	public getInstalledModules(): Map<string, ModuleHandler.ModuleEntry> {
+	public static getInstalledModules(): Map<string, ModuleHandler.ModuleEntry> {
 		// TODO: find something more secure
 		const moduleEntries = this.getModuleEntries();
 
 		return new Map(Object.entries(moduleEntries));
 	}
 
-	public getLoadedModules(): Map<string, Core.Module> {
+	public static getLoadedModules(): Map<string, Core.Module> {
 		// TODO: find something more secure
-		return this.modules;
+		return __modules;
 	}
 
-	private getModuleEntriesSortedByRequirements(): ModuleHandler.ModuleEntry[][] {
+	private static getModuleEntriesSortedByRequirements(): ModuleHandler.ModuleEntry[][] {
 
 		const moduleEntries = this.getModuleEntries();
 
@@ -305,7 +313,7 @@ export class ModuleHandler {
 		)
 	}
 
-	public loadModule(module: Core.Module) {
+	public static loadModule(module: Core.Module) {
 
 		module.load();
 
@@ -321,7 +329,7 @@ export class ModuleHandler {
 		}
 	}
 
-	public async loadInstalledModules(): Promise<void> {
+	public static async loadInstalledModules(): Promise<void> {
 
 		const moduleMatrix = this.getModuleEntriesSortedByRequirements();
 
@@ -334,8 +342,8 @@ export class ModuleHandler {
 		}, Promise.resolve());
 	}
 
-	public unloadInstalledModules(): void {
-		this.modules.forEach(module => {
+	public static unloadInstalledModules(): void {
+		__modules.forEach(module => {
 
 			if (!module.isLoaded())
 				return;
@@ -347,10 +355,10 @@ export class ModuleHandler {
 		});
 	}
 
-	public reloadInstalledModules(): void {
+	public static reloadInstalledModules(): void {
 		// MODULE.debug.log('Reloading modules...');
 
-		this.modules.forEach(module => {
+		__modules.forEach(module => {
 
 			if (!module.isLoaded())
 				return;
@@ -362,7 +370,7 @@ export class ModuleHandler {
 		});
 	}
 
-	public uninstall(name: string): void {
+	public static uninstall(name: string): void {
 
 		// Remove storage key
 		const moduleStorage = this.getStorageEntries();
@@ -371,9 +379,9 @@ export class ModuleHandler {
 
 		// Remove settings
 		const moduleKey = `${name}.`;
-		Core.config.keys().forEach(key => {
+		Core.ConfigHandler.keys().forEach(key => {
 			if (key.startsWith(moduleKey))
-				Core.config.remove(key)
+				Core.ConfigHandler.remove(key)
 		})
 
 		// remove package
@@ -381,12 +389,12 @@ export class ModuleHandler {
 		delete registeredModules[name];
 		this.setModuleEntries(registeredModules);
 
-		if (this.modules.has(name)) {
+		if (__modules.has(name)) {
 			try {
-				this.modules.get(name).unload();
+				__modules.get(name).unload();
 			} catch (e) { }
 
-			this.modules.delete(name);
+			__modules.delete(name);
 		}
 
 	}

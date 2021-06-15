@@ -9,20 +9,20 @@ export class LocalStorage {
 	}
 
 	public has(key: string): boolean {
-		const globalObject = Core.controller.get(StorageEntries.storage);
+		const globalObject = Core.Controller.get(StorageEntries.storage);
 		return globalObject[this.module.name].hasOwnProperty(key);
 	}
 
 	public get(key: string): any {
-		const globalObject = Core.controller.get(StorageEntries.storage);
+		const globalObject = Core.Controller.get(StorageEntries.storage);
 		return globalObject[this.module.name][key];
 	}
 
 	public set(key: string, value: any): void {
-		const globalObject = Core.controller.get(StorageEntries.storage);
+		const globalObject = Core.Controller.get(StorageEntries.storage);
 		globalObject[this.module.name][key] = value;
 
-		Core.controller.set(StorageEntries.storage, globalObject);
+		Core.Controller.set(StorageEntries.storage, globalObject);
 	}
 }
 
