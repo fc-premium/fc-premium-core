@@ -7,7 +7,19 @@ export namespace Controller {
 	}
 }
 
-let __methods: Controller.ControllerMethods = null;
+const METHOD_NAMES: readonly (keyof Controller.ControllerMethods)[] = [
+	'getter', 'setter',
+	'deleter', 'lister'
+];
+
+const DEFAULT_METHODS: Controller.ControllerMethods = {
+	getter: (keys: string | string[]) => { },
+	setter: (key: string, value: any) => { },
+	deleter: (key: string) => { },
+	lister: (key: string) => { return [] },
+};
+
+const __methods: Controller.ControllerMethods = DEFAULT_METHODS;
 
 export class Controller {
 	/*A class for controlling storage*/
@@ -27,7 +39,10 @@ export class Controller {
 		return __methods.lister.apply(null);
 	}
 
-	public static setControllerMethods(methods: Controller.ControllerMethods) {
-		__methods = methods;
+	public static setControllerMethods(methods_to_update: Partial<Controller.ControllerMethods>) {
+		for (const method_name of METHOD_NAMES) {
+			if (typeof methods_to_update[method_name] === 'function')
+				__methods[method_name] = methods_to_update[method_name] as never;
+		}
 	}
 }

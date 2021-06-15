@@ -8,8 +8,6 @@ const octokit = new Octokit({
 	auth: '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'
 });
 
-console.log('octokit', octokit)
-
 export namespace ModuleHandler {
 	export interface WebpackModule {
 		module: Core.Module;
@@ -40,6 +38,12 @@ export namespace ModuleHandler {
 
 	export type ConfigEntriesRoot = Core.ConfigHandler.SettingEntriesRoot
 
+}
+
+function is_webpack_module(object: ModuleHandler.WebpackModule): boolean {
+	return object.__esModule === true
+		&& object[Symbol.toStringTag] === 'Module'
+		&& object.module !== undefined;
 }
 
 const __modules: Map<string, Core.Module> = new Map();
@@ -102,7 +106,7 @@ export class ModuleHandler {
 	}
 
 	private static contextualEval(source: string): ModuleHandler.WebpackModule {
-		return (function(fcpremium) {
+		return (function (fcpremium) {
 			const module = {
 				exports: undefined
 			};
@@ -113,8 +117,7 @@ export class ModuleHandler {
 		})({ Core, FC });
 	}
 
-	// TODO: change name
-	private static evalWebpackModule(webpackModule: ModuleHandler.WebpackModule): Core.Module {
+	private static registerWebpackModule(webpackModule: ModuleHandler.WebpackModule): void {
 
 		const name = webpackModule.module.name;
 
@@ -135,13 +138,13 @@ export class ModuleHandler {
 
 			document.head.appendChild(styleElement);
 		}
-
-		return webpackModule.module;
 	}
 
 	private static evalModuleSource(source: string): Core.Module {
 		const webpackModule = this.contextualEval(source);
-		return this.evalWebpackModule(webpackModule);
+		this.registerWebpackModule(webpackModule);
+
+		return webpackModule.module;
 	}
 
 	private static registerModule(webpackModule: ModuleHandler.WebpackModule, sourceScript: string): void {
@@ -190,18 +193,15 @@ export class ModuleHandler {
 		})
 			.then(response => response.text());
 
-		debugger
-
 		const webpackModule = this.contextualEval(sourceCode);
 
-		// Check if is a webpack module
-		if (webpackModule.__esModule === true && webpackModule[Symbol.toStringTag] === 'Module' && webpackModule.module !== undefined)
+		if (is_webpack_module(webpackModule))
 			this.registerModule(webpackModule, sourceCode);
 		else
-			console.log(`Unable to install module from ${url}`)
+			throw `Unable to install module from ${url}`;
 
 		if (load === true) {
-			this.evalWebpackModule(webpackModule);
+			this.registerWebpackModule(webpackModule);
 			webpackModule.module.load()
 		}
 	}
@@ -291,26 +291,25 @@ export class ModuleHandler {
 		moduleEntriesArray.forEach((module: ModuleHandler.ModuleEntry) => {
 			let i = lastItemIndex;
 
-			for (; i >= 0; i--) {
+			while (i >= 0) {
 
-				const reqInRow = module.requiredModules.some(r =>
+				const requiredInRow = module.requiredModules.some(required_name =>
 					entriesMatrix[i].find(m_module =>
-						m_module.name === r
+						m_module.name === required_name
 					)
 				);
 
-				if (reqInRow === true) {
+				if (requiredInRow) {
 					lastItemIndex += 1;
 					break;
 				}
 			}
 
 			entriesMatrix[i + 1].push(module)
+			i -= 1;
 		});
 
-		return entriesMatrix.filter(row =>
-			row.length > 0
-		)
+		return entriesMatrix.filter(row => row.length > 0);
 	}
 
 	public static loadModule(module: Core.Module) {
@@ -363,8 +362,8 @@ export class ModuleHandler {
 			if (!module.isLoaded())
 				return;
 
-			module.onunload();
-			module.onload();
+			module.unload();
+			module.load();
 
 			// MODULE.debug.log(`Reloaded [${module.name}]`);
 		});
