@@ -1,9 +1,9 @@
 import { Config as _Config } from './config'
 import { Debug as _Debug } from './debug'
 import { LocalStorage as _LocalStorage } from './storage'
-import { Core } from '../core'
+import { Core, core_event_target } from '../core'
 
-import { Events } from '../events'
+import { CoreTarget, Events } from '../events'
 
 export namespace Module {
 	export type URLMatchParameter = string | RegExp;
@@ -68,7 +68,7 @@ function parseMatchesToRegExp(matches: Module.URLMatchParameter[]): RegExp[] {
 }
 
 
-export class Module extends EventTarget {
+export class Module extends CoreTarget {
 	public readonly name: string;
 	public readonly info: Module.Info;
 
@@ -86,7 +86,7 @@ export class Module extends EventTarget {
 	private __loaded: boolean = false;
 
 	public constructor(data: Module.ParameterObject) {
-		super();
+		super(core_event_target);
 
 		data = parseModuleParametes(data);
 
@@ -140,6 +140,7 @@ export class Module extends EventTarget {
 			return true;
 		});
 	}
+
 	public canExecuteInCurrentLocation(): boolean {
 
 		const currentPath = location.pathname + location.search;
@@ -182,7 +183,7 @@ export class Module extends EventTarget {
 
 		this.preloadScripts().then(() => {
 			this.setLoadedState(true);
-			this.dispatchEvent(new Events.LoadEvent)
+			this.dispatchEvent(new Events.LoadEvent(this))
 
 		});
 
@@ -192,7 +193,7 @@ export class Module extends EventTarget {
 	public unload(): void {
 		if (this.isLoaded()) {
 			this.setLoadedState(false);
-			this.dispatchEvent(new Events.UnloadEvent)
+			this.dispatchEvent(new Events.UnloadEvent(this))
 		}
 	}
 
