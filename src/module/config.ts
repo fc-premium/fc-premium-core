@@ -2,7 +2,6 @@ import { Module } from '../module'
 import { Core } from "../core";
 import { ConfigHandler } from '../config-handler';
 
-const ConfigHandler = Core.ConfigHandler;
 
 export class Config {
 

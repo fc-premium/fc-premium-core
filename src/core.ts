@@ -5,9 +5,11 @@ import * as _ConfigHandler from './config-handler'
 import * as _Module from './module'
 import * as _Definitions from './definitions'
 
-import { Events } from './events'
+import { CoreTarget, Events } from './events'
 
 import StorageEntries = _Definitions.StorageEntries;
+
+export const core_event_target = new CoreTarget();
 
 export namespace Core {
 
@@ -19,16 +21,10 @@ export namespace Core {
 	export import ModuleHandler = _ModuleHandler.ModuleHandler;
 	export import Module = _Module.Module;
 
-	const __event_target = new EventTarget();
+	export const addEventListener: EventTarget['addEventListener'] = core_event_target.addEventListener.bind(core_event_target);
+	export const removeEventListener: EventTarget['removeEventListener'] = core_event_target.removeEventListener.bind(core_event_target);
+	export const dispatchEvent: EventTarget['dispatchEvent'] = core_event_target.dispatchEvent.bind(core_event_target);
 
-	export const addEventListener: EventTarget['addEventListener'] = __event_target.addEventListener.bind(__event_target);
-	export const removeEventListener: EventTarget['removeEventListener'] = __event_target.removeEventListener.bind(__event_target);
-	export const dispatchEvent: EventTarget['dispatchEvent'] = __event_target.dispatchEvent.bind(__event_target);
-
-
-	// // public static libraries: Core.LibraryHandler = new _LibraryHandler();
-	// public static modules: Core.ModuleHandler = new _ModuleHandler();
-	// public static config: Core.ConfigHandler = new _ConfigHandler();
 
 	export function isInstalled(): boolean {
 		return Core.Controller.list().includes(StorageEntries.root)
@@ -42,7 +38,7 @@ export namespace Core {
 		Core.Controller.set(StorageEntries.config, {});
 		Core.Controller.set(StorageEntries.storage, {});
 
-		Core.dispatchEvent(new Events.InstallEvent);
+		Core.dispatchEvent(new Events.InstallEvent(Core));
 	}
 
 	export function uninstall(): void {
@@ -52,13 +48,11 @@ export namespace Core {
 			Core.Controller.delete(key)
 		);
 
-		Core.dispatchEvent(new Events.UninstallEvent);
+		Core.dispatchEvent(new Events.UninstallEvent(Core));
 	}
 
 	export function init() {
-		// console.log(StorageEntries)
-
-		// if (!this.isInstalled())
-		// 	this.install();
+		if (!this.isInstalled())
+			this.install();
 	}
 }
