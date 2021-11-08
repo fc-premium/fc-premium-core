@@ -41,11 +41,11 @@ export class CoreTarget extends EventTarget {
 		return result;
 	}
 
-	public addEventListener<T extends Event>(type: string, callback: CustomEventListenerCallback<T> | null, options?: AddEventListenerOptions | boolean): void {
+	public addEventListener<T extends CoreEvent>(type: string, callback: CustomEventListenerCallback<T> | null, options?: AddEventListenerOptions | boolean): void {
 		return super.addEventListener(type, callback as unknown as EventListenerOrEventListenerObject | null, options);
 	};
 
-	public removeEventListener<T extends Event>(type: string, callback: CustomEventListenerCallback<T> | null, options?: EventListenerOptions | boolean): void {
+	public removeEventListener<T extends CoreEvent>(type: string, callback: CustomEventListenerCallback<T> | null, options?: EventListenerOptions | boolean): void {
 		return super.removeEventListener(type, callback as unknown as EventListenerOrEventListenerObject | null, options);
 	};
 }
