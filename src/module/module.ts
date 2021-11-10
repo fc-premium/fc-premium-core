@@ -84,6 +84,7 @@ export class Module extends CoreTarget {
 	// public readonly styles: CSSHandler = new CSSHandler(this);
 
 	private __loaded: boolean = false;
+	private __previously_loaded: boolean = false;
 
 	public constructor(data: Module.ParameterObject) {
 		super(core_event_target);
@@ -125,6 +126,7 @@ export class Module extends CoreTarget {
 
 	public setLoadedState(state: boolean): void {
 		this.__loaded = state;
+		this.__previously_loaded ||= state;
 	}
 
 	public checkRequiredModules(): boolean {
@@ -181,11 +183,15 @@ export class Module extends CoreTarget {
 		if (this.enabled === false || this.canExecuteInCurrentLocation() === false)
 			return false;
 
-		this.preloadScripts().then(() => {
-			this.setLoadedState(true);
-			this.dispatchEvent(new Events.LoadEvent(this))
+		if (this.__previously_loaded) {
+			this.dispatchEvent(new Events.LoadEvent(this));
+		} else {
+			this.preloadScripts().then(() => {
+				this.setLoadedState(true);
+				this.dispatchEvent(new Events.LoadEvent(this))
 
-		});
+			});
+		}
 
 		return true;
 	}
