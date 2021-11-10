@@ -40,7 +40,14 @@ export namespace ModuleHandler {
 
 }
 
-function is_webpack_module(object: ModuleHandler.WebpackModule): boolean {
+type WebpackModule = ModuleHandler.WebpackModule;
+type ModuleEntriesRoot = ModuleHandler.ModuleEntriesRoot;
+type ConfigEntriesRoot = ModuleHandler.ConfigEntriesRoot;
+type StorageEntriesRoot = ModuleHandler.StorageEntriesRoot;
+type ModuleEntry = ModuleHandler.ModuleEntry;
+
+
+function is_webpack_module(object: WebpackModule): boolean {
 	return object.__esModule === true
 		&& object[Symbol.toStringTag] === 'Module'
 		&& object.module !== undefined;
@@ -58,27 +65,27 @@ export class ModuleHandler {
 		return __modules.get(key);
 	}
 
-	private static getModuleEntries(): ModuleHandler.ModuleEntriesRoot {
+	private static getModuleEntries(): ModuleEntriesRoot {
 		return Core.Controller.get(StorageEntries.packages);
 	}
 
-	private static setModuleEntries(entries: ModuleHandler.ModuleEntriesRoot): void {
+	private static setModuleEntries(entries: ModuleEntriesRoot): void {
 		Core.Controller.set(StorageEntries.packages, entries);
 	}
 
-	private static getStorageEntries(): ModuleHandler.StorageEntriesRoot {
+	private static getStorageEntries(): StorageEntriesRoot {
 		return Core.Controller.get(StorageEntries.storage);
 	}
 
-	private static setStorageEntries(entries: ModuleHandler.StorageEntriesRoot): void {
+	private static setStorageEntries(entries: StorageEntriesRoot): void {
 		Core.Controller.set(StorageEntries.storage, entries);
 	}
 
-	private static getConfigEntries(): ModuleHandler.ConfigEntriesRoot {
+	private static getConfigEntries(): ConfigEntriesRoot {
 		return Core.Controller.get(StorageEntries.config);
 	}
 
-	private static setConfigEntries(entries: ModuleHandler.ConfigEntriesRoot): void {
+	private static setConfigEntries(entries: ConfigEntriesRoot): void {
 		Core.Controller.set(StorageEntries.config, entries);
 	}
 
@@ -105,7 +112,7 @@ export class ModuleHandler {
 		}
 	}
 
-	private static contextualEval(source: string): ModuleHandler.WebpackModule {
+	private static contextualEval(source: string): WebpackModule {
 		return (function (fcpremium) {
 			const module = {
 				exports: undefined
@@ -117,7 +124,7 @@ export class ModuleHandler {
 		})({ Core, FC });
 	}
 
-	private static registerWebpackModule(webpackModule: ModuleHandler.WebpackModule): void {
+	private static registerWebpackModule(webpackModule: WebpackModule): void {
 
 		const name = webpackModule.module.name;
 
@@ -147,7 +154,7 @@ export class ModuleHandler {
 		return webpackModule.module;
 	}
 
-	private static registerModule(webpackModule: ModuleHandler.WebpackModule, sourceScript: string): void {
+	private static registerModule(webpackModule: WebpackModule, sourceScript: string): void {
 		const registeredModules = this.getModuleEntries();
 
 		const module = webpackModule.module;
@@ -156,7 +163,7 @@ export class ModuleHandler {
 		if (typeof name === 'string' && name.length > 0 && registeredModules[name] === undefined) {
 			console.log('Registering ', name, registeredModules, registeredModules[name]);
 			// Save module
-			registeredModules[name] = <ModuleHandler.ModuleEntry>{
+			registeredModules[name] = <ModuleEntry>{
 				name: name,
 				info: module.info,
 				requiredModules: module.requiredModules,
@@ -227,7 +234,7 @@ export class ModuleHandler {
 		}
 	}
 
-	public static getInstalledModules(): Map<string, ModuleHandler.ModuleEntry> {
+	public static getInstalledModules(): Map<string, ModuleEntry> {
 		// TODO: find something more secure
 		const moduleEntries = this.getModuleEntries();
 
@@ -239,11 +246,11 @@ export class ModuleHandler {
 		return __modules;
 	}
 
-	private static getModuleEntriesSortedByRequirements(): ModuleHandler.ModuleEntry[][] {
+	private static getModuleEntriesSortedByRequirements(): ModuleEntry[][] {
 
 		const moduleEntries = this.getModuleEntries();
 
-		let moduleEntriesArray: ModuleHandler.ModuleEntry[] = Object.values(moduleEntries);
+		let moduleEntriesArray: ModuleEntry[] = Object.values(moduleEntries);
 
 		// Filter out modules with circular requirements
 		moduleEntriesArray = moduleEntriesArray.filter(entry => {
@@ -282,13 +289,13 @@ export class ModuleHandler {
 			return 0;
 		});
 
-		let entriesMatrix: ModuleHandler.ModuleEntry[][] = new Array(moduleEntriesArray.length)
+		let entriesMatrix: ModuleEntry[][] = new Array(moduleEntriesArray.length)
 			.fill(undefined)
 			.map(_ => []);
 
 		let lastItemIndex = 0;
 
-		moduleEntriesArray.forEach((module: ModuleHandler.ModuleEntry) => {
+		moduleEntriesArray.forEach((module: ModuleEntry) => {
 			let i = lastItemIndex;
 
 			while (i >= 0) {
