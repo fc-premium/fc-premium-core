@@ -73,6 +73,12 @@ export class ModuleHandler {
 		Core.Controller.set(StorageEntries.packages, entries);
 	}
 
+	private static removeModuleEntry(module_name: string) {
+		const registeredModules = this.getModuleEntries();
+		delete registeredModules[module_name];
+		this.setModuleEntries(registeredModules);
+	}
+
 	private static getStorageEntries(): StorageEntriesRoot {
 		return Core.Controller.get(StorageEntries.storage);
 	}
@@ -81,12 +87,28 @@ export class ModuleHandler {
 		Core.Controller.set(StorageEntries.storage, entries);
 	}
 
+	private static removeStorageKey(module_name: string) {
+		const moduleStorage = this.getStorageEntries();
+		delete moduleStorage[module_name];
+		this.setStorageEntries(moduleStorage);
+	}
+
 	private static getConfigEntries(): ConfigEntriesRoot {
 		return Core.Controller.get(StorageEntries.config);
 	}
 
 	private static setConfigEntries(entries: ConfigEntriesRoot): void {
 		Core.Controller.set(StorageEntries.config, entries);
+	}
+
+	private static removeSettings(module_name: string) {
+
+		const moduleKey = `${module_name}.`;
+
+		Core.ConfigHandler.keys().forEach(key => {
+			if (key.startsWith(moduleKey))
+				Core.ConfigHandler.remove(key)
+		});
 	}
 
 	public static getModuleIsEnabled(name: string): boolean {
@@ -319,22 +341,6 @@ export class ModuleHandler {
 		return entriesMatrix.filter(row => row.length > 0);
 	}
 
-	public static loadModule(module: Core.Module) {
-
-		module.load();
-
-		if (module.isLoaded()) {
-			console.log(
-				`Loaded [${module.name}]:` +
-				`\n\tDesc:    ${module.info.description}` +
-				`\n\tAuthor:  ${module.info.author}` +
-				`\n\tVersion: ${module.info.version}`
-			);
-		} else {
-			// MODULE.debug.log('Didnt load ', module.name);
-		}
-	}
-
 	public static async loadInstalledModules(): Promise<void> {
 
 		const moduleMatrix = this.getModuleEntriesSortedByRequirements();
@@ -343,7 +349,7 @@ export class ModuleHandler {
 			await previousPromise;
 			return Promise.all(row.map(entry => {
 				const module = this.evalModuleSource(entry.script)
-				this.loadModule(module);
+				module.load();
 			}));
 		}, Promise.resolve());
 	}
@@ -378,22 +384,9 @@ export class ModuleHandler {
 
 	public static uninstall(name: string): void {
 
-		// Remove storage key
-		const moduleStorage = this.getStorageEntries();
-		delete moduleStorage[name];
-		this.setStorageEntries(moduleStorage);
-
-		// Remove settings
-		const moduleKey = `${name}.`;
-		Core.ConfigHandler.keys().forEach(key => {
-			if (key.startsWith(moduleKey))
-				Core.ConfigHandler.remove(key)
-		})
-
-		// remove package
-		const registeredModules = this.getModuleEntries();
-		delete registeredModules[name];
-		this.setModuleEntries(registeredModules);
+		this.removeStorageKey(name);
+		this.removeSettings(name);
+		this.removeModuleEntry(name)
 
 		if (__modules.has(name)) {
 			try {
