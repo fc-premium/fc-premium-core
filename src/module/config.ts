@@ -1,6 +1,6 @@
 import { Module } from '../module'
 import { Core } from "../core";
-import { ConfigHandler } from '../config-handler';
+import { ConfigHandler, KeyDoesNoExistError } from '../config-handler';
 
 
 export class Config {
@@ -37,7 +37,7 @@ export class Config {
 		key = this.__add_key_prefix(key);
 
 		if (!ConfigHandler.has(key))
-			throw new Error(`'${key}' does not exist`)
+			throw new KeyDoesNoExistError(key);
 
 		return ConfigHandler.getMeta(key);
 	}
@@ -46,7 +46,7 @@ export class Config {
 		key = this.__add_key_prefix(key);
 
 		if (!ConfigHandler.has(key))
-			throw new Error(`'${key}' does not exist`)
+			throw new KeyDoesNoExistError(key);
 
 		return ConfigHandler.get(key);
 	}
@@ -55,7 +55,7 @@ export class Config {
 		key = this.__add_key_prefix(key);
 
 		if (!ConfigHandler.has(key))
-			throw new Error(`'${key}' does not exist`)
+			throw new KeyDoesNoExistError(key);
 
 		ConfigHandler.set(key, value);
 	}

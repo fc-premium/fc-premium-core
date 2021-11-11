@@ -2,7 +2,6 @@ import { StorageEntries } from './definitions'
 import { Core } from './core'
 
 export namespace ConfigHandler {
-
 	const enum ConfigType {
 		String = 'string',
 		Password = 'password',
@@ -134,5 +133,11 @@ export class ConfigHandler {
 		return Object.keys(registeredSettings).filter(key =>
 			key.startsWith(prefix)
 		);
+	}
+}
+
+export class KeyDoesNoExistError extends Error {
+	constructor(key: string) {
+		super(`${key}' does not exist`);
 	}
 }
