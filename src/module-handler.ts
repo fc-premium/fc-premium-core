@@ -218,7 +218,8 @@ export class ModuleHandler {
 
 		const sourceCode: string = await fetch(url, {
 			method: 'GET',
-			headers: NO_CACHE_HEADERS
+			headers: NO_CACHE_HEADERS,
+			mode: 'no-cors'
 		})
 			.then(response => response.text());
 
