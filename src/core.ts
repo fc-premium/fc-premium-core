@@ -44,7 +44,7 @@ export namespace Core {
 	export function uninstall(): void {
 		console.log('Core: Uninstall');
 
-		Object.keys(StorageEntries).forEach(key =>
+		Object.values(StorageEntries).forEach(key =>
 			Core.Controller.delete(key)
 		);
 
