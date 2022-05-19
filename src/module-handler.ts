@@ -321,7 +321,7 @@ export class ModuleHandler {
 		moduleEntriesArray.forEach((module: ModuleEntry) => {
 			let i = lastItemIndex;
 
-			while (i >= 0) {
+			while (i >= 0 && module.requiredModules.length > 0) {
 
 				const requiredInRow = module.requiredModules.some(required_name =>
 					entriesMatrix[i].find(m_module =>
