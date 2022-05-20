@@ -318,26 +318,39 @@ export class ModuleHandler {
 
 		let lastItemIndex = 0;
 
-		moduleEntriesArray.forEach((module: ModuleEntry) => {
-			let i = lastItemIndex;
+		/**
+		 * Build a matrix of all modules sorted by requirements.
+		 * Each row will be able to load all required modules,
+		 * which will be in the previous rows.
+		 */
 
-			while (i >= 0 && module.requiredModules.length > 0) {
+		for (let i = 0; i < moduleEntriesArray.length; i++) {
 
-				const requiredInRow = module.requiredModules.some(required_name =>
-					entriesMatrix[i].find(m_module =>
-						m_module.name === required_name
-					)
-				);
+			const moduleEntry = moduleEntriesArray[i];
+			const requiredModuleNames = moduleEntry.requiredModules;
 
-				if (requiredInRow) {
-					lastItemIndex += 1;
-					break;
+			if (requiredModuleNames.length === 0) {
+				entriesMatrix[lastItemIndex].push(moduleEntry);
+				lastItemIndex++;
+			} else {
+				for (let j = 0; j < requiredModuleNames.length; j++) {
+					const requiredModuleName = requiredModuleNames[j];
+					const requiredModuleIndex = moduleEntriesArray.findIndex(entry => entry.name === requiredModuleName);
+
+					if (requiredModuleIndex === -1) {
+						console.error(`Module '${moduleEntry.name}' requires non installed module '${requiredModuleName}'`);
+						continue;
+					}
+
+					if (requiredModuleIndex > lastItemIndex) {
+						entriesMatrix[requiredModuleIndex].push(moduleEntry);
+						lastItemIndex = requiredModuleIndex;
+					} else {
+						entriesMatrix[lastItemIndex].push(moduleEntry);
+					}
 				}
 			}
-
-			entriesMatrix[i + 1].push(module)
-			i -= 1;
-		});
+		}
 
 		return entriesMatrix.filter(row => row.length > 0);
 	}
