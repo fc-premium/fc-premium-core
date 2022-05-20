@@ -1,6 +1,6 @@
 {
   "name": "fc-premium-core",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Fc premium core api",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
